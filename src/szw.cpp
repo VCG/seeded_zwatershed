@@ -91,7 +91,7 @@ class segmentation_t: public boost::multi_array_ref<uint32_t, 3> {
  */
 void init_queue(queue_t &queue, segmentation_t &segmentation) {
     size_t z, y, x;
-    auto &q0 = queue[0];
+    auto &q255 = queue[255];
     for (z=0; z<segmentation.shape()[0]; z++) {
         for (y=0; y<segmentation.shape()[1]; y++) {
             for (x=0; x<segmentation.shape()[2]; x++) {
@@ -106,7 +106,7 @@ void init_queue(queue_t &queue, segmentation_t &segmentation) {
                     ((y < segmentation.shape()[1] - 1) && (segmentation[z][y+1][x] == 0)) ||
                     ((x > 0) && (segmentation[z][y][x-1] == 0)) ||
                     ((x < segmentation.shape()[2] - 1) && (segmentation[z][y][x+1] == 0)))) {
-                    q0.push_front(qelement_t(x, y, z, e));
+                    q255.push_front(qelement_t(x, y, z, e));
                     /*
                      * Cross out the seed - we'll put it back later, but we
                      * need it to be zero so we know we're good to process it.
@@ -126,16 +126,16 @@ void c_watershed(PyObject *psegmentation,
     segmentation_t segmentation=segmentation_t((PyArrayObject *)psegmentation);
     affinity_t affinity=affinity_t((PyArrayObject *)paffinity);
     queue_t queue;
-    size_t queue_pos = 0;
+    int queue_pos = 255;
     size_t xe=segmentation.shape()[2];
     size_t ye=segmentation.shape()[1];
     size_t ze=segmentation.shape()[0];
     
-    queue.resize(((size_t)threshold)+1);
+    queue.resize(256);
     init_queue(queue, segmentation);
-    while (queue_pos < queue.size()) {
+    while (queue_pos >= 0) {
         if (queue[queue_pos].size() == 0) {
-            queue_pos++;
+            queue_pos--;
             continue;
         }
         qelement_t xyze = queue[queue_pos].back();
@@ -158,50 +158,50 @@ void c_watershed(PyObject *psegmentation,
          */
         if (xyze.z > 0) {
             auto a = affinity[0][xyze.z][xyze.y][xyze.x];
-            if (((int)a <= threshold) && 
+            if (((int)a >= threshold) && 
                 (segmentation[xyze.z-1][xyze.y][xyze.x] == 0)) {
                 queue[a].push_front(qelement_t(xyze.x, xyze.y, xyze.z-1, e));
-                if (a < queue_pos) queue_pos = a;
+                if (a > queue_pos) queue_pos = a;
             }
         }
         if (xyze.z < ze-1) {
             auto a = affinity[0][xyze.z+1][xyze.y][xyze.x];
-            if (((int)a <= threshold) && 
+            if (((int)a >= threshold) && 
                 (segmentation[xyze.z+1][xyze.y][xyze.x] == 0)) {
                 queue[a].push_front(qelement_t(xyze.x, xyze.y, xyze.z+1, e));
-                if (a < queue_pos) queue_pos = a;
+                if (a > queue_pos) queue_pos = a;
             }
         }
         if (xyze.y > 0) {
             auto a = affinity[1][xyze.z][xyze.y][xyze.x];
-            if (((int)a <= threshold) && 
+            if (((int)a >= threshold) && 
                 (segmentation[xyze.z][xyze.y-1][xyze.x] == 0)) {
                 queue[a].push_front(qelement_t(xyze.x, xyze.y-1, xyze.z, e));
-                if (a < queue_pos) queue_pos = a;
+                if (a > queue_pos) queue_pos = a;
             }
         }
         if (xyze.y < ye-1) {
             auto a = affinity[1][xyze.z][xyze.y+1][xyze.x];
-            if (((int)a <= threshold) && 
+            if (((int)a >= threshold) && 
                 (segmentation[xyze.z][xyze.y+1][xyze.x] == 0)) {
                 queue[a].push_front(qelement_t(xyze.x, xyze.y+1, xyze.z, e));
-                if (a < queue_pos) queue_pos = a;
+                if (a > queue_pos) queue_pos = a;
             }
         }
         if (xyze.x > 0) {
             auto a = affinity[2][xyze.z][xyze.y][xyze.x];
-            if (((int)a <= threshold) && 
+            if (((int)a >= threshold) && 
                 (segmentation[xyze.z][xyze.y][xyze.x-1] == 0)) {
                 queue[a].push_front(qelement_t(xyze.x-1, xyze.y, xyze.z, e));
-                if (a < queue_pos) queue_pos = a;
+                if (a > queue_pos) queue_pos = a;
             }
         }
         if (xyze.x < xe-1) {
             auto a = affinity[2][xyze.z][xyze.y][xyze.x+1];
-            if (((int)a <= threshold) && 
+            if (((int)a >= threshold) && 
                 (segmentation[xyze.z][xyze.y][xyze.x+1] == 0)) {
                 queue[a].push_front(qelement_t(xyze.x+1, xyze.y, xyze.z, e));
-                if (a < queue_pos) queue_pos = a;
+                if (a > queue_pos) queue_pos = a;
             }
         }
     }

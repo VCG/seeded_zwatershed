@@ -20,9 +20,9 @@ def watershed(np.ndarray[dtype=np.uint32_t, ndim=3] segmentation,
     levels for connecting in the Z (first index = 0), Y (first index = 1) and
     X (first index = 2) directions. For instance, affinity[0, 1, 2, 3]
     determines the affinity between the voxels at [1, 2, 3] and [2, 2, 3].
-    Lower affinities will connect voxels before higher affinities.
+    Higher affinities will connect voxels before lower affinities.
     :param threshold: No connection will be directly made between two voxels
-    if their affinity is larger than the threshold.
+    if their affinity is less than the threshold.
     '''
     cdef:
         int ithreshold = threshold
