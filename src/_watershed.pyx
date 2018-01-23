@@ -10,6 +10,20 @@ cdef extern from "szw.hpp" nogil:
 
 def watershed(np.ndarray[dtype=np.uint32_t, ndim=3] segmentation,
               np.ndarray[dtype=np.uint8_t, ndim=4] affinity, threshold):
+    '''Perform a seeded watershed using affinities
+    
+    :param segmentation: an N x M x P Numpy uint32 array.
+    On input, this contains markers which serve as the
+    seeds for the segmentation. Each object should have a distinct ID that
+    is used to mark the seed voxels.
+    :param affinity: a 3 x N x M x P Numpy uint8 array. These are the affinity
+    levels for connecting in the Z (first index = 0), Y (first index = 1) and
+    X (first index = 2) directions. For instance, affinity[0, 1, 2, 3]
+    determines the affinity between the voxels at [1, 2, 3] and [2, 2, 3].
+    Lower affinities will connect voxels before higher affinities.
+    :param threshold: No connection will be directly made between two voxels
+    if their affinity is larger than the threshold.
+    '''
     cdef:
         int ithreshold = threshold
         PyObject *psegmentation=<PyObject *>segmentation
